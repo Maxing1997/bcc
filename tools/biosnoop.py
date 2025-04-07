@@ -65,6 +65,7 @@ struct val_t {
     char name[TASK_COMM_LEN];
 };
 
+//保存tracepoint的数据
 struct tp_args {
     u64 __unused__;
     dev_t dev;
@@ -112,9 +113,11 @@ struct data_t {
 };
 
 #ifdef INCLUDE_PATTERN
+//保存sector
 BPF_HASH(last_sectors, struct sector_key_t, u64);
 #endif
 
+//开始
 BPF_HASH(start, struct hash_key, struct start_req_t);
 BPF_HASH(infobyreq, struct hash_key, struct val_t);
 BPF_PERF_OUTPUT(events);
@@ -153,6 +156,7 @@ static int get_rwflag_tp(char *rwbs) {
 }
 
 // cache PID and comm by-req
+//存放pid和name， infobyreq，按照request的粒度
 static int __trace_pid_start(struct hash_key key)
 {
     DISK_FILTER
@@ -182,6 +186,7 @@ int trace_pid_start(struct pt_regs *ctx, struct request *req)
     return __trace_pid_start(key);
 }
 
+//获得tracepoint处的信息
 int trace_pid_start_tp(struct tp_args *args)
 {
     struct hash_key key = {
@@ -194,6 +199,7 @@ int trace_pid_start_tp(struct tp_args *args)
 }
 
 // time block I/O
+//保存一下data的数据量
 int trace_req_start(struct pt_regs *ctx, struct request *req)
 {
     struct hash_key key = {
@@ -222,6 +228,7 @@ static int __trace_req_completion(void *ctx, struct hash_key key)
     u64 ts;
 
     // fetch timestamp and calculate delta
+    //从开始存放的hash表取出来
     startp = start.lookup(&key);
     if (startp == 0) {
         // missed tracing issue
